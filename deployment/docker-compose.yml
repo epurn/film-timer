@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: timer_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-timer_db}
+      POSTGRES_USER: ${POSTGRES_USER:-timer_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-timer_pass}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-timer_user} -d ${POSTGRES_DB:-timer_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../i_timer
+      dockerfile: Dockerfile
+    container_name: timer_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-timer_user}:${POSTGRES_PASSWORD:-timer_pass}@postgres:5432/${POSTGRES_DB:-timer_db}
+      DATABASE_URL_SYNC: postgresql://${POSTGRES_USER:-timer_user}:${POSTGRES_PASSWORD:-timer_pass}@postgres:5432/${POSTGRES_DB:-timer_db}
+      DEBUG: ${DEBUG:-false}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ../i_timer:/app
+    command: >
+      sh -c "
+        alembic upgrade head &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: timer_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    environment:
+      REACT_APP_API_URL: http://localhost:8000
+
+volumes:
+  postgres_data:
+
+networks:
+  default:
+    name: timer_network
