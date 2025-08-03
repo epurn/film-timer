@@ -112,18 +112,29 @@ async def add_timer_step(db: AsyncSession, timer_id: int, step_data: TimerStepCr
 
 
 async def delete_timer_step(db: AsyncSession, timer_id: int, step_id: int) -> bool:
-    """Delete a specific timer step."""
+    """Delete a specific timer step using cascade."""
+    # Get timer with steps
     result = await db.execute(
-        select(TimerStep).where(
-            TimerStep.id == step_id,
-            TimerStep.timer_id == timer_id
-        )
+        select(Timer)
+        .options(selectinload(Timer.steps))
+        .where(Timer.id == timer_id)
     )
-    db_step = result.scalar_one_or_none()
+    db_timer = result.scalar_one_or_none()
     
-    if not db_step:
+    if not db_timer:
         return False
     
-    await db.delete(db_step)
+    # Find the step in the timer's steps
+    step_to_delete = None
+    for step in db_timer.steps:
+        if step.id == step_id:
+            step_to_delete = step
+            break
+    
+    if not step_to_delete:
+        return False
+    
+    # Remove the step from the relationship
+    db_timer.steps.remove(step_to_delete)
     await db.commit()
     return True
