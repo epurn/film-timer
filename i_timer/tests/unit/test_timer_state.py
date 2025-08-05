@@ -159,11 +159,10 @@ class TestTimerStateManager:
         timer_id = 1
         self.manager.start_timer(timer_id, self.sample_steps)
         self.manager.pause_timer(timer_id)
-        
-        # Try to pause again
+
+        # Try to pause again - should fail
         state = self.manager.pause_timer(timer_id)
-        assert state is not None
-        assert state.status == TimerStatus.PAUSED
+        assert state is None  # Cannot pause an already paused timer
 
     def test_resume_timer_not_found(self):
         """Test resuming non-existent timer."""
@@ -191,11 +190,10 @@ class TestTimerStateManager:
         """Test resuming a timer that's not paused."""
         timer_id = 1
         self.manager.start_timer(timer_id, self.sample_steps)
-        
-        # Try to resume running timer
+
+        # Try to resume running timer - should fail
         state = self.manager.resume_timer(timer_id)
-        assert state is not None
-        assert state.status == TimerStatus.RUNNING
+        assert state is None  # Cannot resume a timer that's not paused
 
     def test_stop_timer_not_found(self):
         """Test stopping non-existent timer."""

@@ -139,9 +139,11 @@ class TimerStateManager:
             return None
         
         state = self._timers[timer_id]
-        if state.status == TimerStatus.RUNNING:
-            state.status = TimerStatus.PAUSED
-            state.pause_time = datetime.now()
+        if state.status != TimerStatus.RUNNING:
+            return None  # Can only pause running timers
+        
+        state.status = TimerStatus.PAUSED
+        state.pause_time = datetime.now()
         return state
     
     def resume_timer(self, timer_id: int) -> Optional[TimerState]:
@@ -150,21 +152,24 @@ class TimerStateManager:
             return None
         
         state = self._timers[timer_id]
-        if state.status == TimerStatus.PAUSED:
-            state.status = TimerStatus.RUNNING
-            # Adjust pause time to account for pause duration
-            if state.pause_time:
-                pause_duration = datetime.now() - state.pause_time
-                state.total_time_paused += pause_duration
-            state.pause_time = None
+        if state.status != TimerStatus.PAUSED:
+            return None  # Can only resume paused timers
+        
+        state.status = TimerStatus.RUNNING
+        # Adjust pause time to account for pause duration
+        if state.pause_time:
+            pause_duration = datetime.now() - state.pause_time
+            state.total_time_paused += pause_duration
+        state.pause_time = None
         return state
     
     def stop_timer(self, timer_id: int) -> Optional[TimerState]:
         """Stop a timer."""
         if timer_id not in self._timers:
-            return None
+            return None  # Timer not found or not started
         
         state = self._timers[timer_id]
+        # Can stop any timer that has been started (running, paused, or finished)
         state.status = TimerStatus.STOPPED
         self._update_timer_state(timer_id)
         return state
@@ -175,6 +180,13 @@ class TimerStateManager:
         if timer_id in self._tasks:
             self._tasks[timer_id].cancel()
             del self._tasks[timer_id]
+    
+    def clear_all(self):
+        """Clear all timers (useful for testing)."""
+        self._timers.clear()
+        for task in self._tasks.values():
+            task.cancel()
+        self._tasks.clear()
 
 
 # Global timer state manager

@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
 from app.core.database import create_tables
-from app.routers import timer_routes, import_export_routes
+from app.routers import timer_routes, import_export_routes, action_routes
 
 settings = get_settings()
 
@@ -39,6 +39,7 @@ app.add_middleware(
 # Include routers
 app.include_router(timer_routes.router, prefix=settings.api_v1_prefix)
 app.include_router(import_export_routes.router, prefix=settings.api_v1_prefix)
+app.include_router(action_routes.router, prefix=settings.api_v1_prefix)
 
 
 @app.get("/")

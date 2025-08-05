@@ -99,7 +99,4 @@ class TimerActionResponse(BaseModel):
     time_in_step: int
     time_in_timer: int
     total_time: int
-    is_finished: bool
-    is_paused: bool
-    is_running: bool
-    is_stopped: bool
+    state: str  # "running", "paused", "stopped", "finished"

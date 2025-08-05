@@ -58,6 +58,10 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
         yield test_client
     
     app.dependency_overrides.clear()
+    
+    # Clean up timer manager state after each test
+    from app.services.timer_state import timer_manager
+    timer_manager.clear_all()
 
 
 @pytest.fixture(scope="session")
