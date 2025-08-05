@@ -1,8 +1,10 @@
 """Pydantic schemas for timer operations."""
 
 from datetime import datetime
+from token import OP
 from typing import Optional
 from pydantic import BaseModel, Field
+from app.enums import TimerAction
 
 
 class TimerStepBase(BaseModel):
@@ -82,3 +84,22 @@ class TimerExport(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+class TimerAction(BaseModel):
+    """Schema for timer actions."""
+    action: TimerAction
+    timer_id: int
+    step_id: Optional[int] = None
+
+
+class TimerActionResponse(BaseModel):
+    """Schema for timer action responses."""
+    message: str
+    time_in_step: int
+    time_in_timer: int
+    total_time: int
+    is_finished: bool
+    is_paused: bool
+    is_running: bool
+    is_stopped: bool
